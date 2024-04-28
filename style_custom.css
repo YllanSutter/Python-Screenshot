@@ -1,0 +1,29 @@
+*
+{
+    transition: all 0s!important;
+}
+
+.sectionsbloc img
+{
+    transform: initial!important;
+}
+
+#tarteaucitronAlertSmall, #tarteaucitronAlertBig,.fixedParent,.fixed-header,.animationDirection::before,.to-top,#popup,#banner,
+#loader-wrapper,.loader,#ckbp_popup,#ckbp_banner,#AVcontentBox,#AVoverlay
+{
+    display: none!important;
+}
+
+.fixe-bg,.baseBefore::before,#reassurances,#prestations
+{
+    background-attachment: initial!important;
+}
+
+.animClass, .animClassChild, .animClassToogle, .animClassChildToogle {
+    overflow: inherit!important;
+}
+
+.animClass, .animClassChild>*, .animClassToogle, .animClassChildToogle>* {
+    transform: translate(0,0)!important;
+    opacity: 1!important;
+}
