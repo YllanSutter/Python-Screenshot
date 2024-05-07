@@ -3,12 +3,17 @@
     transition: all 0s!important;
 }
 
-.sectionsbloc img
+#wrappersite
+{
+    overflow: hidden;
+}
+
+.sectionsbloc img,body .vegas-container,#content img
 {
     transform: initial!important;
 }
 
-#tarteaucitronAlertSmall, #tarteaucitronAlertBig,.fixedParent,.fixed-header,.animationDirection::before,.to-top,#popup,#banner,
+#tarteaucitronAlertSmall, #tarteaucitronAlertBig,.fixedParent,.fixed-header,.animationDirection::before,.to-top,#popup,#banner,#ckbp_popup,#ckbp_banner,
 #loader-wrapper,.loader,#ckbp_popup,#ckbp_banner,#AVcontentBox,#AVoverlay
 {
     display: none!important;

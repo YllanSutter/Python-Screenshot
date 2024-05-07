@@ -42,7 +42,11 @@ mobile_emulation = {
 }
 
 chrome_options = Options()
-chrome_options.add_argument("--headless")
+
+# Vérifie si le mode headless est activé
+if "--headless" in sys.argv:
+    chrome_options.add_argument("--headless")
+
 chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
 
 # Initialisation du pilote Selenium
@@ -59,8 +63,18 @@ try:
         css = css_file.read()
         driver.execute_script('var style = document.createElement("style"); style.type = "text/css"; style.innerHTML = arguments[0]; document.head.appendChild(style);', css)
 
-    # Attends 2 secondes au tout début
-    time.sleep(5)
+    # Attends le temps spécifié (si donné)
+    if "--time" in sys.argv and sys.argv.index("--time") + 1 < len(sys.argv):
+        time_index = sys.argv.index("--time")
+        if time_index + 1 < len(sys.argv):
+            try:
+                wait_time = int(sys.argv[time_index + 1])
+                time.sleep(wait_time)
+            except ValueError:
+                print("La valeur du temps n'est pas valide. Utilisation du temps par défaut.")
+    else:
+        # Attend 2 secondes au tout début
+        time.sleep(5)
 
     # Attends que la page soit complètement chargée
     WebDriverWait(driver, 10).until(lambda driver: driver.execute_script("return document.readyState") == "complete")
