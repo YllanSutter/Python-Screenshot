@@ -111,31 +111,81 @@ def capture_screenshot_full(url, headless, time_value):
 
     driver = webdriver.Chrome(options=chrome_options)
     
+    log_prefix = f"[FULL][{url}] "
+    # Pour retour d'erreur détaillé
+    error_detail = None
+    import time as _time
+    import errno
     try:
-        driver.get(url + "/?force")
-        
-        driver.execute_script('var style = document.createElement("style"); style.type = "text/css"; style.innerHTML = arguments[0]; document.head.appendChild(style);', CSS_CONTENT)
-        
-        driver.set_window_size(1920, 1080)
-        
-        time.sleep(time_value)
-        
-        sanitized_url = sanitize_url(url)
-        png_path = ob.full_screenshot(driver, save_path='.', image_name=f'{filename}.png', is_load_at_runtime=True, load_wait_time=3)
-        
-        # Conversion PNG en JPG
-        with Image.open(png_path) as img:
-            rgb_img = img.convert('RGB')
-            jpg_filename = f'{filename}.jpg'
-            rgb_img.save(jpg_filename, 'JPEG', quality=85)
-        
-        # Suppression du fichier PNG
-        os.remove(png_path)
-        
-        print(f"Capture d'écran sauvegardée : {jpg_filename}")
-    
-    except Exception as e:
-        print(f"Une erreur s'est produite : {e}")
+        try:
+            driver.get(url + "/?force")
+            driver.execute_script('var style = document.createElement("style"); style.type = "text/css"; style.innerHTML = arguments[0]; document.head.appendChild(style);', CSS_CONTENT)
+            driver.set_window_size(1920, 1080)
+            time.sleep(time_value)
+            sanitized_url = sanitize_url(url)
+            # Préfixe unique pour éviter les collisions de fichiers temporaires (part_*.png)
+            unique_prefix = filename
+            png_path = ob.full_screenshot(driver, save_path='.', image_name=f'{unique_prefix}_full.png', is_load_at_runtime=True, load_wait_time=3)
+
+            # Attente que le fichier PNG soit bien disponible ET stable (taille ne change plus)
+            max_wait = 15  # secondes
+            waited = 0
+            png_ok = False
+            last_size = -1
+            stable_count = 0
+            while waited < max_wait:
+                try:
+                    # Recherche du bon fichier part (ex: monsite_full.png ou monsite_full_part_0.png)
+                    part_file = png_path
+                    if not os.path.exists(part_file):
+                        # Cherche un part associé
+                        dir_files = os.listdir('.')
+                        part_candidates = [f for f in dir_files if f.startswith(f'{unique_prefix}_full_part_') and f.endswith('.png')]
+                        if part_candidates:
+                            part_file = sorted(part_candidates)[-1]  # Prend le dernier part généré
+                        else:
+                            raise FileNotFoundError(f"{png_path} ni aucun part trouvé")
+                    size = os.path.getsize(part_file)
+                    if size > 0 and size == last_size:
+                        stable_count += 1
+                    else:
+                        stable_count = 0
+                    last_size = size
+                    if stable_count >= 3:
+                        with open(part_file, 'rb') as f:
+                            f.read(10)
+                        png_ok = True
+                        png_path = part_file  # Utilise ce fichier pour la suite
+                        break
+                except (OSError, IOError, FileNotFoundError) as e:
+                    error_detail = str(e)
+                _time.sleep(0.33)
+                waited += 0.33
+            if not png_ok:
+                print(log_prefix + f"ECHEC : Le fichier PNG n'a pas pu être ouvert ou stabilisé après {max_wait}s. Détail : {error_detail}")
+                return False, f"ECHEC PNG/part : {error_detail}"
+
+            # Conversion PNG en JPG
+            try:
+                with Image.open(png_path) as img:
+                    rgb_img = img.convert('RGB')
+                    jpg_filename = f'{filename}.jpg'
+                    rgb_img.save(jpg_filename, 'JPEG', quality=85)
+            except Exception as e:
+                print(log_prefix + f"ECHEC : Erreur lors de l'ouverture/conversion du PNG : {e}")
+                return False, f"ECHEC CONVERSION : {e}"
+
+            # Suppression du fichier PNG
+            try:
+                os.remove(png_path)
+            except Exception as e:
+                print(log_prefix + f"ATTENTION : Erreur lors de la suppression du PNG : {e}")
+
+            print(log_prefix + f"OK : Capture d'écran sauvegardée : {jpg_filename}")
+            return True, None
+        except Exception as e:
+            print(log_prefix + f"ECHEC : Exception générale : {e}")
+            return False, f"EXCEPTION : {e}"
     finally:
         driver.quit()
 
@@ -143,9 +193,17 @@ def execute_scripts(urls, script1_checked, script2_checked, headless, time_value
     executed_sites = []
     
     def execute_script(script_func, script_name, url):
-        script_func(url, headless, time_value)
+        # Pour capture_screenshot_full, on récupère (ok, err)
+        if script_func == capture_screenshot_full:
+            ok, err = script_func(url, headless, time_value)
+            if ok:
+                status_text.insert(tk.END, f"{script_name} OK sur {url.strip()}\n")
+            else:
+                status_text.insert(tk.END, f"{script_name} ECHEC sur {url.strip()}\nDétail : {err}\n")
+        else:
+            script_func(url, headless, time_value)
+            status_text.insert(tk.END, f"{script_name} terminé sur {url.strip()}\n")
         executed_sites.append(url.strip())
-        status_text.insert(tk.END, f"{script_name} terminé sur {url.strip()}\n")
         root.update()
     
     for url in urls:
