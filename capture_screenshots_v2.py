@@ -60,6 +60,21 @@ html, body {
     width:100%;
 }
 
+.home #content :is(.blocthumb,.specialthumb,.tertiarythumb,.quaternarythumb,.gallery-item,.wp-block-image,.wp-block-image img)
+{
+    transform: initial!important;
+    opacity:1!important;
+}
+#sections :is(.specialthumb,.blocthumb,.specialthumb img,.blocthumb img)
+{
+    background-attachment: inherit!important;
+}
+.gallery-item img
+{
+    opacity:1!important;
+    transform: initial!important;
+}
+
 .sectionsbloc img,body .vegas-container,#content img {
     transform: initial!important;
 }
